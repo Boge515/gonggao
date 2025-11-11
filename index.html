@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>通知公告</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="wrap">
+        <header class="header">
+            <h2>通知公告</h2>
+            <!-- <a href="#" class="more">更多 ></a> -->
+        </header>
+
+        <div id="loading" class="loading">正在加载公告...</div>
+        <ul class="list" id="newsList">
+            <!-- 动态内容将在这里渲染 -->
+        </ul>
+    </div>
+
+    <script>
+        // 本地代理服务器地址
+        const PROXY_API_URL = 'http://localhost:3001/api/news';
+
+        // 获取新闻数据并渲染
+        async function fetchNews() {
+            const loadingElement = document.getElementById('loading');
+            const newsListElement = document.getElementById('newsList');
+
+            try {
+                loadingElement.style.display = 'block';
+                newsListElement.style.display = 'none';
+
+                console.log('正在从代理服务器获取数据...');
+                const response = await fetch(PROXY_API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.code === 200 && data.news && Array.isArray(data.news)) {
+                    console.log('成功获取真实API数据');
+                    renderNews(data.news);
+                } else {
+                    throw new Error('API返回数据格式错误');
+                }
+                
+            } catch (error) {
+                console.error('获取新闻数据失败:', error);
+                // 如果代理服务器也失败，使用模拟数据作为备选方案
+                console.log('使用模拟数据作为备选方案');
+                const mockData = await getMockData();
+                renderNews(mockData.news);
+            } finally {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        // 获取模拟数据（备选方案）
+        async function getMockData() {
+            return {
+                code: 200,
+                news: [
+                    {
+                        // title: "十年再启航|蕴辰科技正式更名为广州百蕴启辰科技有限公司",
+                        // link: "https://www.gzyunchen.com/blog/b61ad578ea0",
+                        // date: "2020年4月30日",
+                        // desc: "十年再启航|蕴辰科技正式更名为广州百蕴启辰科技有限公司 十年，是从青葱走向成熟的时间 十年，是从空白走向五彩的时间 十年，沧桑了岁月却沉淀了光华 十年，经历了磨练却成就了希望 2010年..."
+                    },
+                    {
+                        // title: "我司取得《信息安全服务资质认证证书》",
+                        // link: "https://www.gzyunchen.com/blog/a93be5a0cef",
+                        // date: "2020年1月19日",
+                        // desc: "近日，广州蕴辰网络科技有限公司取得由中国网络安全审查技术与认证中心颁发的《信息安全服务资质认证证书》，核定公司的信息安全应急处理服务符合CCRC-ISV-C01:2018《信息安全服务规范》三级..."
+                    },
+                    {
+                        // title: "岭南大会再次相聚 电竞大咖见招拆招",
+                        // link: "https://www.gzyunchen.com/blog/75ed5dc77ca",
+                        // date: "2019年12月16日",
+                        // desc: "2019年12月13-14日，\"佛山狮跃 卫健龙腾\"2019年岭南健康信息大会在广东●佛山盛大召开。蕴辰科技作为此次大会支持单位，很荣幸与各位领导、各位行业同仁共同探讨大健康行业现状，分别针对医..."
+                    }
+                ]
+            };
+        }
+
+        // 渲染新闻列表
+        function renderNews(newsArray) {
+            const newsListElement = document.getElementById('newsList');
+            
+            if (newsArray.length === 0) {
+                newsListElement.innerHTML = `
+                    <li style="text-align: center; padding: 40px 20px; color: #666;">
+                        暂无公告
+                    </li>
+                `;
+                return;
+            }
+
+            const newsHTML = newsArray.map((news, index) => {
+                // 格式化日期显示
+                const formattedDate = formatDate(news.date);
+                
+                return `
+                    <li style="animation-delay: ${0.1 * (index + 1)}s">
+                        <a href="${news.link}" target="_blank">
+                            <span class="date">${formattedDate}</span>
+                            <span class="title">${news.title}</span>
+                        </a>
+                    </li>
+                `;
+            }).join('');
+
+            newsListElement.innerHTML = newsHTML;
+            newsListElement.style.display = 'block';
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            try {
+                // 将中文日期转换为标准格式
+                const chineseDate = dateString.replace('年', '-').replace('月', '-').replace('日', '');
+                const date = new Date(chineseDate);
+                
+                if (isNaN(date.getTime())) {
+                    // 如果解析失败，返回原始日期
+                    return dateString;
+                }
+                
+                return date.getFullYear() + '/' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '/' + 
+                       String(date.getDate()).padStart(2, '0');
+            } catch (error) {
+                return dateString;
+            }
+        }
+
+        // 页面加载完成后获取数据
+        document.addEventListener('DOMContentLoaded', fetchNews);
+    </script>
+
+    <style>
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #667eea;
+            font-size: 16px;
+            display: none;
+        }
+    </style>
+</body>
+</html>
